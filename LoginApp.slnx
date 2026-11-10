@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LoginApp.Api/LoginApp.Api.csproj" />
+  <Project Path="LoginApp.Application/LoginApp.Application.csproj" />
+  <Project Path="LoginApp.Domain/LoginApp.Domain.csproj" />
+  <Project Path="LoginApp.Infrastructure/LoginApp.Infrastructure.csproj" />
+</Solution>
