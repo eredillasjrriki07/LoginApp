@@ -1,3 +1,3 @@
 ﻿namespace LoginApp.Domain.Users.Events;
 
-//public sealed class UserCreatedEvent(Guid UserId, )
+public sealed record UserCreatedEvent(Guid UserId, string Username, string Email);
