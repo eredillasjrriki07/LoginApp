@@ -20,7 +20,7 @@ public sealed class UserService(
     IValidator<CreateUserRequestDto> _createValidator
 ) : IUserService
 {
-    public async Task<UserDto> CrateAsync(CreateUserRequestDto request, CancellationToken ct = default)
+    public async Task<UserDto> CreateAsync(CreateUserRequestDto request, CancellationToken ct = default)
     {
         await _createValidator.ValidateAndThrowDomainAsync(request);
         var username = new Username(request.Username);

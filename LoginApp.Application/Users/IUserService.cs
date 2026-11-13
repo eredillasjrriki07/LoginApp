@@ -5,5 +5,5 @@ namespace LoginApp.Application.Users;
 
 public interface IUserService
 {
-    Task<UserDto> CrateAsync(CreateUserRequestDto request, CancellationToken ct = default);
+    Task<UserDto> CreateAsync(CreateUserRequestDto request, CancellationToken ct = default);
 }
