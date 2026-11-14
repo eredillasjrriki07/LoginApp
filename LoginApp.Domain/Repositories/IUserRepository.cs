@@ -4,7 +4,9 @@ namespace LoginApp.Domain.Repositories;
 
 public interface IUserRepository
 {
-    Task<User?> GetAsync(Guid id, CancellationToken ct = default);
+    Task<User?> GetUserByIdAsync(Guid id, CancellationToken ct = default);
+
+    bool EmailExists(string email);
 
     void Add(User user);
 

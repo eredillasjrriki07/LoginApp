@@ -3,7 +3,7 @@ using LoginApp.Application.Users.RequestDtos;
 
 namespace LoginApp.Application.Users;
 
-public interface IUserService
+public interface IAuthService
 {
-    Task<UserDto> CreateAsync(CreateUserRequestDto request, CancellationToken ct = default);
+    Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default);
 }

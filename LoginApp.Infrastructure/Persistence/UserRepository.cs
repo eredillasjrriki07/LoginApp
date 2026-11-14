@@ -7,8 +7,11 @@ namespace LoginApp.Infrastructure.Persistence;
 
 internal sealed class UserRepository(LoginAppDbContext _db) : IUserRepository
 {
-    public Task<User?> GetAsync(Guid id, CancellationToken ct = default) =>
+    public Task<User?> GetUserByIdAsync(Guid id, CancellationToken ct = default) =>
         _db.Users.SingleOrDefaultAsync(u => u.Id == id, ct);
+
+    public bool EmailExists(string email) =>
+        _db.Users.Any(u => u.Email == email);
 
     public void Add(User user) => _db.Users.Add(user);
 
