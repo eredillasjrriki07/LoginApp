@@ -24,6 +24,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> _logger) : I
                 StatusCodes.Status400BadRequest,
                 ApiResponse<object>.ErrorResponse(ex.Message, ex.Errors)
             ),
+            InvalidCredentialsException ex => (
+                StatusCodes.Status401Unauthorized,
+                ApiResponse<object>.ErrorResponse(ex.Message)
+            ),
             NotFoundException ex => (
                 StatusCodes.Status404NotFound,
                 ApiResponse<object>.ErrorResponse(ex.Message)

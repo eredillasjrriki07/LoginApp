@@ -18,8 +18,10 @@ public sealed class AuthService(
     IPasswordHasher _passwordHasher,
     IUserQueries _queries,
     IDomainEventRecorder _recorder,
+    ITokenProvider _tokenProvider,
     IClock _clock,
-    IValidator<CreateUserRequestDto> _createValidator
+    IValidator<CreateUserRequestDto> _createValidator,
+    IValidator<LoginRequestDto> _loginValidator
 ) : IAuthService
 {
     public async Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default)
@@ -45,6 +47,26 @@ public sealed class AuthService(
         return await ReadBackAsync(user.Id, ct);
     }
 
+    public async Task<string> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
+    {
+        await _loginValidator.ValidateAndThrowDomainAsync(request);
+        var email = new Email(request.Email);
+
+        var user = await _uow.ExecuteAsync(_ =>
+        {
+            User? user = _users.GetUserByEmail(email.Value);
+
+            if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+                throw new InvalidCredentialsException();
+
+            RecordEvent(user);
+            return Task.FromResult(user);
+        });
+
+        _logger.LogInformation("User has logged in with user id {UserId} and {Email}", user.Id, user.Email);
+        return _tokenProvider.Create(user);
+    }
+
     private void RecordEvent(User user)
     {
         foreach (var domainEvent in user.DomainEvents)
@@ -58,4 +80,6 @@ public sealed class AuthService(
     private async Task<UserDto> ReadBackAsync(Guid id, CancellationToken ct)
         => await _queries.GetAsync(id, ct)
         ?? throw new InvalidOperationException($"User {id} was saved but could not be read back.");
+
+
 }

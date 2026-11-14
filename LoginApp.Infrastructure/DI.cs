@@ -3,6 +3,7 @@ using LoginApp.Application.Common;
 using LoginApp.Application.Users;
 using LoginApp.Domain.Common;
 using LoginApp.Domain.Repositories;
+using LoginApp.Infrastructure.Authentication;
 using LoginApp.Infrastructure.Persistence;
 using LoginApp.Infrastructure.Persistence.Events;
 using LoginApp.Infrastructure.Time;
@@ -30,6 +31,9 @@ public static class LoginAppDependencies
         services.AddScoped<IUserQueries, UserQueries>();
 
         services.AddScoped<IPasswordHasher, BCrypyPasswordHasher>();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddSingleton<ITokenProvider, TokenProvider>();
 
         return services;
     }
