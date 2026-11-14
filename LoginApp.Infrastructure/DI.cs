@@ -29,6 +29,8 @@ public static class LoginAppDependencies
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserQueries, UserQueries>();
 
+        services.AddScoped<IPasswordHasher, BCrypyPasswordHasher>();
+
         return services;
     }
 }

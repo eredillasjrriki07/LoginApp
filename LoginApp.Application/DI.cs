@@ -9,7 +9,7 @@ public static class LoginApplication
     public static IServiceCollection AddLoginApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(typeof(LoginApplication).Assembly);
-        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
         return services;
     }
 }

@@ -11,7 +11,7 @@ namespace LoginApp.Api.Controllers.User;
 [ApiController]
 [Route("api/users")]
 public class UsersController(
-    IUserService _users,
+    IAuthService _authService,
     IUserQueries _queries
 ) : ApiControllerBase
 {
@@ -24,9 +24,9 @@ public class UsersController(
     [HttpPost("create")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateUserRequestDto request, CancellationToken ct)
+    public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request, CancellationToken ct)
     {
-        var user = await _users.CreateAsync(request, ct);
+        var user = await _authService.RegisterAsync(request, ct);
         return CreatedAtAction(nameof(Get), new { id = user.Id }, ApiResponse<UserDto>.SuccesResponse(user));
     }
 }

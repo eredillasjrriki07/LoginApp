@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using LoginApp.Application.Common;
+using LoginApp.Application.Common.Exceptions;
 using LoginApp.Application.Events;
 using LoginApp.Application.Users.Dtos;
 using LoginApp.Application.Users.RequestDtos;
@@ -10,25 +11,30 @@ using Microsoft.Extensions.Logging;
 
 namespace LoginApp.Application.Users;
 
-public sealed class UserService(
-    ILogger<UserService> _logger,
+public sealed class AuthService(
+    ILogger<AuthService> _logger,
     IUserUnitOfWork _uow,
     IUserRepository _users,
+    IPasswordHasher _passwordHasher,
     IUserQueries _queries,
     IDomainEventRecorder _recorder,
     IClock _clock,
     IValidator<CreateUserRequestDto> _createValidator
-) : IUserService
+) : IAuthService
 {
-    public async Task<UserDto> CreateAsync(CreateUserRequestDto request, CancellationToken ct = default)
+    public async Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default)
     {
         await _createValidator.ValidateAndThrowDomainAsync(request);
         var username = new Username(request.Username);
         var email = new Email(request.Email);
-        var passwordHash = request.Password;
 
         var user = await _uow.ExecuteAsync(_ =>
         {
+            if (_users.EmailExists(email.Value))
+                throw new EmailExistsException(email.Value);
+
+            var passwordHash = _passwordHasher.Hash(request.Password);
+
             var created = User.Create(username, email, passwordHash);
             _users.Add(created);
             RecordEvent(created);

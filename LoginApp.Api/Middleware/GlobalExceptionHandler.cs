@@ -28,6 +28,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> _logger) : I
                 StatusCodes.Status404NotFound,
                 ApiResponse<object>.ErrorResponse(ex.Message)
             ),
+            EmailExistsException ex => (
+                StatusCodes.Status409Conflict,
+                ApiResponse<object>.ErrorResponse(ex.Message)
+            ),
             // Someone saved the same product after this request loaded it (the version moved). EF's own message is not
             // for users, so the sentence is fixed; clients branch on the 409, never on the text.
             DbUpdateConcurrencyException => (
