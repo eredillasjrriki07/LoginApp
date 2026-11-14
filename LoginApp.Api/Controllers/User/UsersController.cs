@@ -21,7 +21,7 @@ public class UsersController(
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
         ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
 
-    [HttpPost("create")]
+    [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request, CancellationToken ct)
@@ -29,4 +29,10 @@ public class UsersController(
         var user = await _authService.RegisterAsync(request, ct);
         return CreatedAtAction(nameof(Get), new { id = user.Id }, ApiResponse<UserDto>.SuccesResponse(user));
     }
+
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
+        => ApiOk(await _authService.LoginAsync(request, ct));
 }

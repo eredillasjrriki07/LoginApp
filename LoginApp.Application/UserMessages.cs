@@ -11,4 +11,5 @@ public static class UserMessages
     public static readonly string EmailTooLong = $"Email must be {Email.MaxLength} or fewer.";
     public const string EmailInvalid = "Email is invalid.";
     public static readonly string UserInactive = UserRules.Inactive;
+    public const string PasswordEmpty = "Password is required.";
 }
