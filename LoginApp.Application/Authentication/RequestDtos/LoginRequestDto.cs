@@ -1,4 +1,4 @@
-﻿namespace LoginApp.Application.Users.RequestDtos;
+﻿namespace LoginApp.Application.Authentication.RequestDtos;
 
 public sealed class LoginRequestDto
 {

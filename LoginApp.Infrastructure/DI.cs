@@ -1,4 +1,5 @@
 ﻿using LoginApp.Application;
+using LoginApp.Application.Authentication;
 using LoginApp.Application.Common;
 using LoginApp.Application.Users;
 using LoginApp.Domain.Common;
@@ -34,6 +35,9 @@ public static class LoginAppDependencies
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<ITokenProvider, TokenProvider>();
+
+        services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }

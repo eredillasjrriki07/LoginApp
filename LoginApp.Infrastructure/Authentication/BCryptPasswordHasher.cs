@@ -1,4 +1,4 @@
-﻿using LoginApp.Application.Users;
+﻿using LoginApp.Application.Authentication;
 
 namespace LoginApp.Infrastructure.Authentication;
 

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using LoginApp.Application.Users.RequestDtos;
+using LoginApp.Application.Authentication.RequestDtos;
 
 namespace LoginApp.Application.Users.Validators;
 

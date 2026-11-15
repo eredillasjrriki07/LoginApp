@@ -32,6 +32,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> _logger) : I
                 StatusCodes.Status401Unauthorized,
                 ApiResponse<object>.ErrorResponse(ex.Message)
             ),
+            InvalidRefreshTokenException ex => (
+                StatusCodes.Status401Unauthorized,
+                ApiResponse<object>.ErrorResponse(ex.Message)
+            ),
             ForbiddenException ex => (
                 StatusCodes.Status403Forbidden,
                 ApiResponse<object>.ErrorResponse(ex.Message)
