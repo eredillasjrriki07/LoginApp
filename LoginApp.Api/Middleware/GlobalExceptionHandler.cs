@@ -28,6 +28,14 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> _logger) : I
                 StatusCodes.Status401Unauthorized,
                 ApiResponse<object>.ErrorResponse(ex.Message)
             ),
+            UnauthorizedAccessException ex => (
+                StatusCodes.Status401Unauthorized,
+                ApiResponse<object>.ErrorResponse(ex.Message)
+            ),
+            ForbiddenException ex => (
+                StatusCodes.Status403Forbidden,
+                ApiResponse<object>.ErrorResponse(ex.Message)
+            ),
             NotFoundException ex => (
                 StatusCodes.Status404NotFound,
                 ApiResponse<object>.ErrorResponse(ex.Message)

@@ -46,6 +46,15 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
         };
+        o.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(ApiResponse<object>.ErrorResponse("Unauthorized"));
+            }
+        };
     });
 
 builder.Services.AddAuthorization();

@@ -1,8 +1,8 @@
 ﻿using LoginApp.Application.Users;
 
-namespace LoginApp.Infrastructure.Persistence;
+namespace LoginApp.Infrastructure.Authentication;
 
-internal sealed class BCrypyPasswordHasher : IPasswordHasher
+internal sealed class BCryptPasswordHasher : IPasswordHasher
 {
     private const int WorkFactor = 12;
 

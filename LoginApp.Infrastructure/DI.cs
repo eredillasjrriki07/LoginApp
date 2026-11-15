@@ -30,7 +30,7 @@ public static class LoginAppDependencies
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserQueries, UserQueries>();
 
-        services.AddScoped<IPasswordHasher, BCrypyPasswordHasher>();
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<ITokenProvider, TokenProvider>();

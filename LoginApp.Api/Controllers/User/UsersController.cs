@@ -5,6 +5,8 @@ using LoginApp.Application;
 using LoginApp.Api.Models;
 using LoginApp.Application.Users.Dtos;
 using LoginApp.Application.Users.RequestDtos;
+using Microsoft.AspNetCore.Authorization;
+using LoginApp.Api.Extensions;
 
 namespace LoginApp.Api.Controllers.User;
 
@@ -15,11 +17,16 @@ public class UsersController(
     IUserQueries _queries
 ) : ApiControllerBase
 {
+    [Authorize]
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
-        ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    {
+        if (User.GetUserId() != id) throw new ForbiddenException();
+        return ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
+    }
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]

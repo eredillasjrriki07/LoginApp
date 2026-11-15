@@ -59,7 +59,6 @@ public sealed class AuthService(
             if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
                 throw new InvalidCredentialsException();
 
-            RecordEvent(user);
             return Task.FromResult(user);
         });
 
