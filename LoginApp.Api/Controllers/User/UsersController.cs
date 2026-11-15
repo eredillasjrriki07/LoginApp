@@ -5,6 +5,10 @@ using LoginApp.Application;
 using LoginApp.Api.Models;
 using LoginApp.Application.Users.Dtos;
 using LoginApp.Application.Users.RequestDtos;
+using Microsoft.AspNetCore.Authorization;
+using LoginApp.Api.Extensions;
+using LoginApp.Application.Authentication;
+using LoginApp.Application.Authentication.RequestDtos;
 
 namespace LoginApp.Api.Controllers.User;
 
@@ -15,11 +19,16 @@ public class UsersController(
     IUserQueries _queries
 ) : ApiControllerBase
 {
+    [Authorize]
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
-        ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    {
+        if (User.GetUserId() != id) throw new ForbiddenException();
+        return ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
+    }
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
@@ -35,4 +44,19 @@ public class UsersController(
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
         => ApiOk(await _authService.LoginAsync(request, ct));
+
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(string refreshToken, CancellationToken ct) =>
+        ApiOk(await _authService.RefreshAsync(refreshToken, ct));
+
+    [HttpPost("logout")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout(string refreshToken, CancellationToken ct)
+    {
+        await _authService.LogoutAsync(refreshToken, ct);
+        return NoContent();
+    }
 }

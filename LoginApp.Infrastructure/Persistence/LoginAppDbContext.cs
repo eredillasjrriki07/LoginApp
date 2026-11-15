@@ -1,4 +1,5 @@
-﻿using LoginApp.Domain.Users;
+﻿using LoginApp.Domain.Authentication;
+using LoginApp.Domain.Users;
 using LoginApp.Infrastructure.Persistence.Configuration;
 using LoginApp.Infrastructure.Persistence.Events;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ public class LoginAppDbContext(DbContextOptions<LoginAppDbContext> options) : Db
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<DomainEventRow> DomainEvents => Set<DomainEventRow>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(LoginAppDbContext).Assembly);

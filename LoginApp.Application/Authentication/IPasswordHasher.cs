@@ -1,4 +1,4 @@
-﻿namespace LoginApp.Application.Users;
+﻿namespace LoginApp.Application.Authentication;
 
 public interface IPasswordHasher
 {

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using LoginApp.Application.Users;
+using LoginApp.Application.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LoginApp.Application;
