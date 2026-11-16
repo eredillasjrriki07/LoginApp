@@ -1,6 +1,6 @@
 ﻿using LoginApp.Application.Authentication;
 
-namespace LoginApp.Infrastructure.Authentication;
+namespace LoginApp.Infrastructure.Persistence.Authentication;
 
 internal sealed class BCryptPasswordHasher : IPasswordHasher
 {

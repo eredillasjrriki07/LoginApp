@@ -7,9 +7,11 @@ namespace LoginApp.Application.Authentication;
 
 public interface IAuthService
 {
-    Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default);
-    
     Task<TokenDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default);
+
+    Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default);
+
+    Task<UserDto> UpdateAsync(Guid id, UpdateUserRequestDto request, CancellationToken ct = default);
 
     Task<TokenDto> RefreshAsync(string refreshToken, CancellationToken ct = default);
 

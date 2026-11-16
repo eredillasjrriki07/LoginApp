@@ -1,12 +1,14 @@
 ﻿using LoginApp.Application;
 using LoginApp.Application.Authentication;
 using LoginApp.Application.Common;
+using LoginApp.Application.Security;
 using LoginApp.Application.Users;
 using LoginApp.Domain.Common;
 using LoginApp.Domain.Repositories;
-using LoginApp.Infrastructure.Authentication;
 using LoginApp.Infrastructure.Persistence;
+using LoginApp.Infrastructure.Persistence.Authentication;
 using LoginApp.Infrastructure.Persistence.Events;
+using LoginApp.Infrastructure.Persistence.Security;
 using LoginApp.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -34,10 +36,12 @@ public static class LoginAppDependencies
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-        services.AddSingleton<ITokenProvider, TokenProvider>();
+        services.AddSingleton<IJwtProvider, JwtProvider>();
 
         services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+        services.AddScoped<IRoleRepository, RoleRepository>();
 
         return services;
     }

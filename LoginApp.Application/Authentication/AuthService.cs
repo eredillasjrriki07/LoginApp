@@ -4,12 +4,14 @@ using LoginApp.Application.Authentication.RequestDtos;
 using LoginApp.Application.Common;
 using LoginApp.Application.Common.Exceptions;
 using LoginApp.Application.Events;
+using LoginApp.Application.Security;
 using LoginApp.Application.Users;
 using LoginApp.Application.Users.Dtos;
 using LoginApp.Application.Users.RequestDtos;
 using LoginApp.Domain.Authentication;
 using LoginApp.Domain.Common;
 using LoginApp.Domain.Repositories;
+using LoginApp.Domain.Security;
 using LoginApp.Domain.Users;
 using Microsoft.Extensions.Logging;
 
@@ -22,16 +24,36 @@ public sealed class AuthService(
     IPasswordHasher _passwordHasher,
     IUserQueries _queries,
     IDomainEventRecorder _recorder,
-    ITokenProvider _tokenProvider,
+    IJwtProvider _tokenProvider,
     IRefreshTokenGenerator _refreshTokenGenerator,
     IRefreshTokenRepository _refreshTokens,
+    IRoleRepository _roles,
     IClock _clock,
     IValidator<CreateUserRequestDto> _createValidator,
+    IValidator<UpdateUserRequestDto> _updateValidator,
     IValidator<LoginRequestDto> _loginValidator
 ) : IAuthService
 {
 
     private static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(7);
+
+    public async Task<TokenDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
+    {
+        await _loginValidator.ValidateAndThrowDomainAsync(request);
+        var email = new Email(request.Email);
+
+        User? user = _users.GetUserByEmail(email.Value);
+
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            throw new InvalidCredentialsException();
+
+        var permissions = await _roles.GetPermissionsAsync(user.Id, ct);
+
+        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, permissions, DateTime.UtcNow)), ct);
+
+        _logger.LogInformation("User has logged in with id {Id}.", user.Id);
+        return tokenDto;
+    }
 
     public async Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default)
     {
@@ -48,6 +70,7 @@ public sealed class AuthService(
 
             var created = User.Create(username, email, passwordHash);
             _users.Add(created);
+            _roles.AssignRole(created.Id, RoleIds.Viewer);
             RecordEvent(created);
             return Task.FromResult(created);
         }, ct);
@@ -56,22 +79,31 @@ public sealed class AuthService(
         return await ReadBackAsync(user.Id, ct);
     }
 
-    public async Task<TokenDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
+    public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequestDto request, CancellationToken ct = default)
     {
-        await _loginValidator.ValidateAndThrowDomainAsync(request);
+        await _updateValidator.ValidateAndThrowDomainAsync(request);
+        var username = new Username(request.Username);
         var email = new Email(request.Email);
 
-        User? user = _users.GetUserByEmail(email.Value);
+        var changed = await _uow.ExecuteAsync(async token =>
+        {
+            var user = await LoadAsync(id, token);
+            _users.ExpectVersion(user, request.Version);
 
-        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
-            throw new InvalidCredentialsException();
+            var passwordHash = _passwordHasher.Hash(request.Password);
 
-        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, DateTime.UtcNow)), ct);
+            user.Update(username, email, passwordHash);
 
-        _logger.LogInformation("User has logged in with id {Id}.", user.Id);
-        return tokenDto;
+            // Saving the same details raises nothing: no event, no write, and no log line.
+            var any = user.DomainEvents.Count > 0;
+            RecordEvent(user);
+            return any;
+        }, ct);
+
+        if (changed)
+            _logger.LogInformation("User {UserId} updated.", id);
+        return await ReadBackAsync(id, ct);
     }
-
     public async Task<TokenDto> RefreshAsync(string refreshToken, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
@@ -91,7 +123,9 @@ public sealed class AuthService(
         var user = await _users.GetUserByIdAsync(stored.UserId, ct)
             ?? throw new InvalidRefreshTokenException();
 
-        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, DateTime.UtcNow, replacing: stored)), ct);
+        var permissions = await _roles.GetPermissionsAsync(user.Id, ct);
+
+        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, permissions, DateTime.UtcNow, replacing: stored)), ct);
 
         _logger.LogInformation("Refresh token triggered with user id {Id}.", user.Id);
         return tokenDto;
@@ -111,14 +145,22 @@ public sealed class AuthService(
         _logger.LogInformation("User has logged out with id {Id}.", stored.UserId);
     }
 
-    private TokenDto IssueTokens(User user, DateTime now, RefreshToken? replacing = null)
+    private TokenDto IssueTokens(User user, IEnumerable<string> permissions, DateTime now, RefreshToken? replacing = null)
     {
         var (raw, hash) = _refreshTokenGenerator.Generate();
 
         replacing?.Revoke(now, hash);
         _refreshTokens.Add(new RefreshToken(user.Id, hash, now, now.Add(RefreshLifetime)));
 
-        return new TokenDto { AccessToken = _tokenProvider.Create(user), RefreshToken = raw };
+        return new TokenDto { AccessToken = _tokenProvider.Create(user, permissions), RefreshToken = raw };
+    }
+
+    private async Task<User> LoadAsync(Guid id, CancellationToken ct)
+    {
+        var user = await _users.GetUserByIdAsync(id, ct);
+        if (user is null || !user.IsActive)
+            throw new NotFoundException(UserMessages.NotFound);
+        return user;
     }
 
     private void RecordEvent(User user)

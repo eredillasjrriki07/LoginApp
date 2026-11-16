@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using LoginApp.Api.Extensions;
 using LoginApp.Application.Authentication;
 using LoginApp.Application.Authentication.RequestDtos;
+using LoginApp.Api.Security;
+using LoginApp.Domain.Security;
 
 namespace LoginApp.Api.Controllers.User;
 
@@ -30,6 +32,14 @@ public class UsersController(
         return ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
     }
 
+    [AllowAnonymous]
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
+        => ApiOk(await _authService.LoginAsync(request, ct));
+
+    [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -39,12 +49,16 @@ public class UsersController(
         return CreatedAtAction(nameof(Get), new { id = user.Id }, ApiResponse<UserDto>.SuccesResponse(user));
     }
 
-    [HttpPost("login")]
-    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
-        => ApiOk(await _authService.LoginAsync(request, ct));
+    [HasPermission(Permissions.UsersUpdate)]
+    [HttpPut("update/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequestDto request, CancellationToken ct) =>
+        ApiOk(await _authService.UpdateAsync(id, request, ct));
 
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]

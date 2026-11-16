@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace LoginApp.Infrastructure.Authentication;
+namespace LoginApp.Infrastructure.Persistence.Authentication;
 
 internal sealed class RefreshTokenGenerator : IRefreshTokenGenerator
 {
