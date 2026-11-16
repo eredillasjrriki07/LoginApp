@@ -1,4 +1,5 @@
 ﻿using LoginApp.Domain.Authentication;
+using LoginApp.Domain.Security;
 using LoginApp.Domain.Users;
 using LoginApp.Infrastructure.Persistence.Configuration;
 using LoginApp.Infrastructure.Persistence.Events;
@@ -11,6 +12,10 @@ public class LoginAppDbContext(DbContextOptions<LoginAppDbContext> options) : Db
     public DbSet<User> Users => Set<User>();
     public DbSet<DomainEventRow> DomainEvents => Set<DomainEventRow>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(LoginAppDbContext).Assembly);

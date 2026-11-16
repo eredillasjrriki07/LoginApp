@@ -1,4 +1,4 @@
-﻿namespace LoginApp.Infrastructure.Authentication;
+﻿namespace LoginApp.Infrastructure.Persistence.Authentication;
 
 public sealed class JwtOptions
 {

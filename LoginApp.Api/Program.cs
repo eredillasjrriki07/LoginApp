@@ -1,8 +1,10 @@
 using LoginApp.Api.Middleware;
 using LoginApp.Api.Models;
+using LoginApp.Api.Security;
 using LoginApp.Infrastructure;
-using LoginApp.Infrastructure.Authentication;
+using LoginApp.Infrastructure.Persistence.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -27,6 +29,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddLoginAppDependencies(builder.Configuration);
 
 var jwt = builder.Configuration

@@ -3,7 +3,7 @@ using LoginApp.Domain.Authentication;
 using LoginApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace LoginApp.Infrastructure.Authentication;
+namespace LoginApp.Infrastructure.Persistence.Authentication;
 
 internal sealed class RefreshTokenRepository(LoginAppDbContext _db) : IRefreshTokenRepository
 {

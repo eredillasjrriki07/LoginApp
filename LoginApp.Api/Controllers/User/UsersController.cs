@@ -30,6 +30,14 @@ public class UsersController(
         return ApiOk(await _queries.GetAsync(id, ct) ?? throw new NotFoundException(UserMessages.NotFound));
     }
 
+    [AllowAnonymous]
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
+        => ApiOk(await _authService.LoginAsync(request, ct));
+
+    [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -39,12 +47,7 @@ public class UsersController(
         return CreatedAtAction(nameof(Get), new { id = user.Id }, ApiResponse<UserDto>.SuccesResponse(user));
     }
 
-    [HttpPost("login")]
-    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken ct)
-        => ApiOk(await _authService.LoginAsync(request, ct));
-
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
