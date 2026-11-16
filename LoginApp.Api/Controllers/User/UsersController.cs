@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using LoginApp.Api.Extensions;
 using LoginApp.Application.Authentication;
 using LoginApp.Application.Authentication.RequestDtos;
+using LoginApp.Api.Security;
+using LoginApp.Domain.Security;
 
 namespace LoginApp.Api.Controllers.User;
 
@@ -46,6 +48,15 @@ public class UsersController(
         var user = await _authService.RegisterAsync(request, ct);
         return CreatedAtAction(nameof(Get), new { id = user.Id }, ApiResponse<UserDto>.SuccesResponse(user));
     }
+
+    [HasPermission(Permissions.UsersUpdate)]
+    [HttpPut("update/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequestDto request, CancellationToken ct) =>
+        ApiOk(await _authService.UpdateAsync(id, request, ct));
 
     [AllowAnonymous]
     [HttpPost("refresh")]

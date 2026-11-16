@@ -34,6 +34,25 @@ public sealed class User : Entity, IDomainEventCarrier
         return user;
     }
 
+    // Making the update method simple for demo purposes.
+    // In real world app, only changed field should be in
+    // the request body. :)
+    public void Update(Username username, Email email, string passwordHash)
+    {
+        EnsureUserActive();
+
+        var changes = new List<UserFieldChanged>(2);
+        Track(changes, "username", Username, username.Value);
+        Track(changes, "email", Email, email.Value);
+        Track(changes, "password_hash", PasswordHash, passwordHash);
+        if (changes.Count == 0)
+            return;
+
+        SetDetails(username, email, passwordHash);
+        _events.Add(new UserUpdatedEvent(Id, Username, changes));
+
+    }
+
     private void SetDetails(Username username, Email email, string passwordHash)
     {
         Username = username.Value;
@@ -43,7 +62,15 @@ public sealed class User : Entity, IDomainEventCarrier
 
     private void EnsureUserActive() => Rule.Require(IsActive, UserRules.Inactive);
 
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     public void ClearDomainEvents() => _events.Clear();
+
+    private static void Track(List<UserFieldChanged> changes, string field, string? from, string? to)
+    {
+        if (!string.Equals(from, to, StringComparison.Ordinal))
+            changes.Add(new UserFieldChanged(field, from, to));
+    }
 
 }
 

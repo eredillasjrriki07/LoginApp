@@ -30,11 +30,30 @@ public sealed class AuthService(
     IRoleRepository _roles,
     IClock _clock,
     IValidator<CreateUserRequestDto> _createValidator,
+    IValidator<UpdateUserRequestDto> _updateValidator,
     IValidator<LoginRequestDto> _loginValidator
 ) : IAuthService
 {
 
     private static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(7);
+
+    public async Task<TokenDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
+    {
+        await _loginValidator.ValidateAndThrowDomainAsync(request);
+        var email = new Email(request.Email);
+
+        User? user = _users.GetUserByEmail(email.Value);
+
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            throw new InvalidCredentialsException();
+
+        var permissions = await _roles.GetPermissionsAsync(user.Id, ct);
+
+        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, permissions, DateTime.UtcNow)), ct);
+
+        _logger.LogInformation("User has logged in with id {Id}.", user.Id);
+        return tokenDto;
+    }
 
     public async Task<UserDto> RegisterAsync(CreateUserRequestDto request, CancellationToken ct = default)
     {
@@ -60,24 +79,31 @@ public sealed class AuthService(
         return await ReadBackAsync(user.Id, ct);
     }
 
-    public async Task<TokenDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
+    public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequestDto request, CancellationToken ct = default)
     {
-        await _loginValidator.ValidateAndThrowDomainAsync(request);
+        await _updateValidator.ValidateAndThrowDomainAsync(request);
+        var username = new Username(request.Username);
         var email = new Email(request.Email);
 
-        User? user = _users.GetUserByEmail(email.Value);
+        var changed = await _uow.ExecuteAsync(async token =>
+        {
+            var user = await LoadAsync(id, token);
+            _users.ExpectVersion(user, request.Version);
 
-        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
-            throw new InvalidCredentialsException();
+            var passwordHash = _passwordHasher.Hash(request.Password);
 
-        var permissions = await _roles.GetPermissionsAsync(user.Id, ct);
+            user.Update(username, email, passwordHash);
 
-        var tokenDto = await _uow.ExecuteAsync(_ => Task.FromResult(IssueTokens(user, permissions,DateTime.UtcNow)), ct);
+            // Saving the same details raises nothing: no event, no write, and no log line.
+            var any = user.DomainEvents.Count > 0;
+            RecordEvent(user);
+            return any;
+        }, ct);
 
-        _logger.LogInformation("User has logged in with id {Id}.", user.Id);
-        return tokenDto;
+        if (changed)
+            _logger.LogInformation("User {UserId} updated.", id);
+        return await ReadBackAsync(id, ct);
     }
-    
     public async Task<TokenDto> RefreshAsync(string refreshToken, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
@@ -119,7 +145,7 @@ public sealed class AuthService(
         _logger.LogInformation("User has logged out with id {Id}.", stored.UserId);
     }
 
-    private TokenDto IssueTokens(User user, IEnumerable<string> permissions,DateTime now, RefreshToken? replacing = null)
+    private TokenDto IssueTokens(User user, IEnumerable<string> permissions, DateTime now, RefreshToken? replacing = null)
     {
         var (raw, hash) = _refreshTokenGenerator.Generate();
 
@@ -127,6 +153,14 @@ public sealed class AuthService(
         _refreshTokens.Add(new RefreshToken(user.Id, hash, now, now.Add(RefreshLifetime)));
 
         return new TokenDto { AccessToken = _tokenProvider.Create(user, permissions), RefreshToken = raw };
+    }
+
+    private async Task<User> LoadAsync(Guid id, CancellationToken ct)
+    {
+        var user = await _users.GetUserByIdAsync(id, ct);
+        if (user is null || !user.IsActive)
+            throw new NotFoundException(UserMessages.NotFound);
+        return user;
     }
 
     private void RecordEvent(User user)
